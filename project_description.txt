@@ -1,0 +1,93 @@
+PROJECT DESCRIPTION
+===================
+The application is a real-time messaging platform designed with a client-server architecture using FastAPI for the backend. It supports instant messaging via persistent WebSocket connections, ensuring real-time delivery for one-to-one and group conversations.
+
+Key Features:
+- Real-time messaging using WebSockets.
+- REST API for authentication, user management, and history retrieval.
+- Authentication via JWT (JSON Web Tokens).
+- Multi-device support with synchronized message delivery.
+- Persistence of messages, conversations, and user data in a database.
+- Support for presence updates, typing indicators, and read receipts.
+- Scalable architecture designed for horizontal scaling (ready for Redis Pub/Sub integration).
+
+Architecture:
+- **Backend**: FastAPI (Python).
+- **Protocol**: HTTP/HTTPS for REST, WS/WSS for real-time events.
+- **Data Storage**: Relational Database (e.g., SQLite for dev, PostgreSQL for prod) for users and messages.
+- **Client**: Web-based UI handling WebSocket connections and REST calls.
+
+TO-DO LIST
+==========
+
+phase 1: Project Initialization
+-------------------------------
+1. Initialize Project Structure
+   - Create directory layout (app, core, api, db, models, schemas).
+   - Set up virtual environment and install dependencies (fastapi, uvicorn, sqlalchemy, pydantic, pyjwt, passlib, websockets).
+2. Database Setup
+   - Design database schema (Users, Conversations, Messages, ConversationParticipants).
+   - Configure database connection (SQLAlchemy).
+   - Create initial migration/tables creation script.
+
+Phase 2: Authentication & User Management
+-----------------------------------------
+3. Implement User Models & Schemas
+   - User SQLAlchemy model.
+   - Pydantic schemas for UserCreate, UserLogin, UserResponse.
+4. Implement Authentication Logic
+   - Password hashing utility.
+   - JWT token generation and validation.
+   - API endpoints: `/auth/register`, `/auth/login`.
+   - specific dependency `get_current_user` for protecting routes.
+
+Phase 3: Core Chat Features (REST)
+----------------------------------
+5. Conversation Management
+   - API to create a new conversation (1-on-1 or group).
+   - API to list user's conversations.
+   - API to fetch message history for a conversation.
+6. Message Persistence
+   - Service to save messages to the database.
+
+Phase 4: Real-time Messaging (WebSockets)
+-----------------------------------------
+7. WebSocket Connection Manager
+   - Create `ConnectionManager` class to track active connections.
+   - Map user IDs to WebSocket connections.
+   - Handle connect and disconnect events.
+8. WebSocket Endpoint
+   - Implement `ws://` endpoint protected by JWT (passed via query param or headers).
+   - Handle incoming messages (Text).
+   - Broadcast messages to all participants in a conversation.
+9. Event Handling
+   - Define structure for WebSocket events (type, payload).
+   - Handle specific events: `message.new`.
+
+Phase 5: Advanced Real-time Features
+------------------------------------
+10. Presence & Status
+    - Track online/offline status.
+    - Broadcast status updates to relevant users.
+11. Typing Indicators & Read Receipts
+    - Handle ephemeral events (`user.typing`, `message.read`) that don't need permanent persistence (or minimal persistence).
+    - Broadcast these events to conversation participants.
+
+Phase 6: Frontend Client
+------------------------
+12. Basic UI Skeleton
+    - Login/Register pages.
+    - Main Dashboard (Sidebar for conversations, Main chat area).
+13. Client Logic
+    - API client for REST calls (Login, fetch history).
+    - WebSocket client implementation (Connection management, event listeners).
+    - State management for messages and active conversations.
+
+Phase 7: Testing & Polish
+-------------------------
+14. Testing
+    - Unit tests for API endpoints.
+    - Test WebSocket connectivity.
+15. Deployment Prep
+    - Dockerfile (optional).
+    - Environment configuration (.env).
