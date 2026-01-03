@@ -4,7 +4,9 @@ A real-time messaging platform using FastAPI (Backend) and WebSockets.
 
 ## Demo
 
-<video src="https://player.cloudinary.com/embed/?cloud_name=dqgfuemcn&public_id=Screencast_From_2026-01-03_17-35-29_vfjlfj&profile=cld-default" width="100%" controls></video>
+[![Watch the Demo](https://res.cloudinary.com/dqgfuemcn/video/upload/c_fill,h_450,w_800,e_blur:200/Screencast_From_2026-01-03_17-35-29_vfjlfj.jpg)](https://player.cloudinary.com/embed/?cloud_name=dqgfuemcn&public_id=Screencast_From_2026-01-03_17-35-29_vfjlfj&profile=cld-default)
+
+*Click the image above to watch the demo video*
 
 ## Project Structure
 - `backend/`: FastAPI application.
