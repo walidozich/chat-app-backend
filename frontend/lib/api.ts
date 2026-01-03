@@ -119,6 +119,18 @@ export class ApiClient {
 
         return response.json();
     }
+
+    async getConversation(conversationId: number): Promise<Conversation> {
+        const response = await fetch(`${API_V1}/conversations/${conversationId}`, {
+            headers: this.getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch conversation');
+        }
+
+        return response.json();
+    }
 }
 
 export const apiClient = new ApiClient();

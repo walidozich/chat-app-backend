@@ -17,6 +17,7 @@ export default function ChatPage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
     const activeConversationIdRef = React.useRef<number | null>(null);
+    const conversationsRef = React.useRef<Conversation[]>([]);
 
     // Keep ref in sync with state
     useEffect(() => {
@@ -26,6 +27,31 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [users, setUsers] = useState<Map<number, User>>(new Map());
     const [searchResults, setSearchResults] = useState<User[]>([]);
+
+    useEffect(() => {
+        conversationsRef.current = conversations;
+    }, [conversations]);
+
+    const upsertConversation = (conversation: Conversation) => {
+        setConversations(prev => {
+            const filtered = prev.filter(c => c.id !== conversation.id);
+            return [conversation, ...filtered];
+        });
+    };
+
+    const ensureConversationExists = async (conversationId: number) => {
+        const existing = conversationsRef.current.find(c => c.id === conversationId);
+        if (existing) {
+            upsertConversation(existing);
+            return;
+        }
+        try {
+            const conv = await apiClient.getConversation(conversationId);
+            upsertConversation(conv);
+        } catch (err) {
+            console.error('Failed to fetch conversation for incoming message:', err);
+        }
+    };
 
     useEffect(() => {
         const token = apiClient.getToken();
@@ -46,9 +72,19 @@ export default function ChatPage() {
 
         // Connect WebSocket
         wsManager.connect(token);
-        wsManager.onMessage((message) => {
+        wsManager.onMessage(async (message) => {
+            // Ensure conversation exists locally so recipients see new chats immediately
+            const conversationId = message.conversation_id;
+            await ensureConversationExists(conversationId);
+
+            // If user has no active conversation (e.g., first message), open the new chat
+            if (!activeConversationIdRef.current) {
+                activeConversationIdRef.current = conversationId;
+                setActiveConversationId(conversationId);
+            }
+
             // Only add message if it's for the current active conversation
-            if (message.conversation_id !== activeConversationIdRef.current) {
+            if (conversationId !== activeConversationIdRef.current) {
                 return;
             }
 

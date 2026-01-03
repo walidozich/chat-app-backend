@@ -31,6 +31,26 @@ def get_conversations(
     
     return [serialize_conversation(conv) for conv in conversations]
 
+@router.get("/{conversation_id}")
+def get_conversation(
+    conversation_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_user),
+) -> dict:
+    """
+    Get a single conversation for the current user.
+    """
+    conversation = (
+        db.query(models.Conversation)
+        .filter(models.Conversation.id == conversation_id)
+        .join(models.Conversation.participants)
+        .filter(models.User.id == current_user.id)
+        .first()
+    )
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found.")
+    return serialize_conversation(conversation)
+
 @router.post("/direct")
 def create_direct_conversation(
     payload: schemas.DirectConversationCreate,
