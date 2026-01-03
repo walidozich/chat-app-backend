@@ -20,6 +20,13 @@ source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 pip install -r requirements.txt
 ```
 
+**To run the backend:**
+```bash
+cd backend
+source venv/bin/activate  # Activate virtual environment first
+uvicorn app.main:app --reload --port 8001
+```
+
 ## Features & Verification
 
 ### 1. Project Initialization
@@ -103,6 +110,22 @@ pip install -r requirements.txt
   npm run dev
   ```
 - **Access**: Open `http://localhost:3000` in your browser
+
+## Database Seeding
+
+To populate the database with sample data (users, conversations, and messages):
+
+```bash
+cd backend
+source venv/bin/activate
+PYTHONPATH=. python seed.py
+```
+
+This creates 4 test users:
+- alice@example.com / password123
+- bob@example.com / password123
+- charlie@example.com / password123
+- diana@example.com / password123
 
 ## How to Use
 1. Start PostgreSQL: `docker compose up -d`
