@@ -1,4 +1,4 @@
-import type { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types';
+import type { Conversation, LoginRequest, RegisterRequest, AuthResponse, User } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 const API_V1 = `${API_BASE_URL}/api/v1`;
@@ -80,6 +80,44 @@ export class ApiClient {
 
     getToken(): string | null {
         return this.token;
+    }
+
+    private getAuthHeaders() {
+        if (!this.token) {
+            throw new Error('User is not authenticated');
+        }
+        return {
+            'Authorization': `Bearer ${this.token}`,
+        };
+    }
+
+    async searchUsers(query: string): Promise<User[]> {
+        const response = await fetch(`${API_V1}/users/search?query=${encodeURIComponent(query)}`, {
+            headers: this.getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to search users');
+        }
+
+        return response.json();
+    }
+
+    async startDirectConversation(userId: number): Promise<Conversation> {
+        const response = await fetch(`${API_V1}/conversations/direct`, {
+            method: 'POST',
+            headers: {
+                ...this.getAuthHeaders(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_id: userId }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to start conversation');
+        }
+
+        return response.json();
     }
 }
 

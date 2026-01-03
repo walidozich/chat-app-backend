@@ -8,6 +8,9 @@ import { apiClient } from '@/lib/api';
 import { wsManager } from '@/lib/websocket';
 import type { User, Message, Conversation } from '@/types';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+const API_V1 = `${API_BASE_URL}/api/v1`;
+
 export default function ChatPage() {
     const router = useRouter();
     const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -22,6 +25,7 @@ export default function ChatPage() {
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [users, setUsers] = useState<Map<number, User>>(new Map());
+    const [searchResults, setSearchResults] = useState<User[]>([]);
 
     useEffect(() => {
         const token = apiClient.getToken();
@@ -58,7 +62,7 @@ export default function ChatPage() {
         });
 
         // Fetch conversations from API
-        fetch('http://localhost:8001/api/v1/conversations/', {
+        fetch(`${API_V1}/conversations/`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
             },
@@ -93,7 +97,7 @@ export default function ChatPage() {
         setMessages([]);
 
         // Fetch messages for the conversation
-        fetch(`http://localhost:8001/api/v1/messages/${activeConversationId}/messages`, {
+        fetch(`${API_V1}/messages/${activeConversationId}/messages`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
             },
@@ -128,6 +132,43 @@ export default function ChatPage() {
         }
     };
 
+    const handleSearchUsers = async (query: string) => {
+        const term = query.trim();
+        if (!term) {
+            setSearchResults([]);
+            return;
+        }
+
+        try {
+            const results = await apiClient.searchUsers(term);
+            setSearchResults(results);
+            setUsers(prev => {
+                const next = new Map(prev);
+                results.forEach(user => next.set(user.id, user));
+                return next;
+            });
+        } catch (err) {
+            console.error('Failed to search users:', err);
+        }
+    };
+
+    const handleStartConversation = async (userId: number) => {
+        try {
+            const conversation = await apiClient.startDirectConversation(userId);
+            setConversations(prev => {
+                const existing = prev.find(c => c.id === conversation.id);
+                if (existing) {
+                    return prev.map(c => c.id === conversation.id ? conversation : c);
+                }
+                return [conversation, ...prev];
+            });
+            setActiveConversationId(conversation.id);
+            setSearchResults([]);
+        } catch (err) {
+            console.error('Failed to start conversation:', err);
+        }
+    };
+
     if (!currentUser) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -144,6 +185,9 @@ export default function ChatPage() {
                 conversations={conversations}
                 activeConversationId={activeConversationId}
                 onSelectConversation={setActiveConversationId}
+                searchResults={searchResults}
+                onSearchUsers={handleSearchUsers}
+                onStartConversation={handleStartConversation}
             />
             <ChatArea
                 messages={messages}
