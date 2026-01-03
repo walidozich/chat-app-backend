@@ -30,7 +30,7 @@ export function MessageList({ messages, currentUserId, users }: MessageListProps
 
                     return (
                         <div
-                            key={message.id}
+                            key={`msg-${message.id}`}
                             className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
                         >
                             {!isOwn && <Avatar name={sender?.full_name || 'User'} size="sm" />}
@@ -44,8 +44,8 @@ export function MessageList({ messages, currentUserId, users }: MessageListProps
 
                                 <div
                                     className={`px-4 py-2 rounded-2xl ${isOwn
-                                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
+                                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
                                         }`}
                                 >
                                     {message.content}
