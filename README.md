@@ -52,7 +52,16 @@ pip install -r requirements.txt
   🎉 ALL TESTS PASSED
   ```
 
+### 3. WebSockets
+- **Status**: ✅ Completed
+- **Endpoints**:
+  - `WS /api/v1/ws?token={access_token}`: Real-time connection.
+- **Verification**:
+  ```bash
+  export PYTHONPATH=backend
+  python backend/tests/verify_ws.py
+  ```
+
 ## Upcoming Features
-- WebSocket Manager
 - Message Persistence
 - Real-time Messaging
