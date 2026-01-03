@@ -62,6 +62,18 @@ pip install -r requirements.txt
   python backend/tests/verify_ws.py
   ```
 
+### 4. Message Persistence (PostgreSQL)
+- **Status**: ✅ Completed
+- **Infrastructure**: Dockerized PostgreSQL.
+- **Verification**:
+  ```bash
+  # Ensure Docker is running
+  docker compose up -d
+  
+  # Run persistence test
+  export PYTHONPATH=backend
+  python backend/tests/verify_persistence.py
+  ```
+
 ## Upcoming Features
-- Message Persistence
 - Real-time Messaging
