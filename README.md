@@ -96,7 +96,7 @@ pip install -r requirements.txt
   ```bash
   # Terminal 1: Start backend
   cd backend
-  uvicorn app.main:app --reload
+  uvicorn app.main:app --reload --port 8001
   
   # Terminal 2: Start frontend
   cd frontend
@@ -106,7 +106,7 @@ pip install -r requirements.txt
 
 ## How to Use
 1. Start PostgreSQL: `docker compose up -d`
-2. Start backend: `cd backend && uvicorn app.main:app --reload`
+2. Start backend: `cd backend && uvicorn app.main:app --reload --port 8001`
 3. Start frontend: `cd frontend && npm run dev`
 4. Register a new account at `http://localhost:3000/register`
 5. Login and start chatting!

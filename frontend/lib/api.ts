@@ -1,6 +1,6 @@
 import type { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 const API_V1 = `${API_BASE_URL}/api/v1`;
 
 export class ApiClient {

@@ -1,6 +1,6 @@
 import type { SocketEvent, Message } from '@/types';
 
-const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
+const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8001';
 const WS_V1 = `${WS_BASE_URL}/api/v1`;
 
 export class WebSocketManager {
