@@ -84,5 +84,32 @@ pip install -r requirements.txt
   python backend/tests/verify_realtime.py
   ```
 
+### 6. Frontend Client (Next.js)
+- **Status**: ✅ Completed
+- **Features**: Modern UI with authentication, real-time chat, and WebSocket integration.
+- **Setup**:
+  ```bash
+  cd frontend
+  npm install
+  ```
+- **Running**:
+  ```bash
+  # Terminal 1: Start backend
+  cd backend
+  uvicorn app.main:app --reload
+  
+  # Terminal 2: Start frontend
+  cd frontend
+  npm run dev
+  ```
+- **Access**: Open `http://localhost:3000` in your browser
+
+## How to Use
+1. Start PostgreSQL: `docker compose up -d`
+2. Start backend: `cd backend && uvicorn app.main:app --reload`
+3. Start frontend: `cd frontend && npm run dev`
+4. Register a new account at `http://localhost:3000/register`
+5. Login and start chatting!
+
 ## Upcoming Features
 - Frontend Client (UI + WebSocket integration)
