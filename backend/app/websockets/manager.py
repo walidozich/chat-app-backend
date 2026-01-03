@@ -27,4 +27,10 @@ class ConnectionManager:
             for connection in user_connections:
                 await connection.send_text(message)
 
+    async def broadcast_to_users(self, user_ids: List[int], message: str):
+        for user_id in user_ids:
+            if user_id in self.active_connections:
+                for connection in self.active_connections[user_id]:
+                    await connection.send_text(message)
+
 manager = ConnectionManager()

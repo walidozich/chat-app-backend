@@ -75,5 +75,14 @@ pip install -r requirements.txt
   python backend/tests/verify_persistence.py
   ```
 
+### 5. Real-time Messaging
+- **Status**: ✅ Completed
+- **Features**: Send/receive messages via WebSocket with persistence and broadcasting.
+- **Verification**:
+  ```bash
+  export PYTHONPATH=backend
+  python backend/tests/verify_realtime.py
+  ```
+
 ## Upcoming Features
-- Real-time Messaging
+- Frontend Client (UI + WebSocket integration)
