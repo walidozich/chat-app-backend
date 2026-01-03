@@ -5,40 +5,33 @@ import { Avatar } from '@/components/ui/Avatar';
 import type { Conversation, User } from '@/types';
 
 interface SidebarProps {
+    isOpen: boolean;
+    onToggle: () => void;
+    activeSection: 'chat' | 'directory' | 'account';
+    onChangeSection: (section: 'chat' | 'directory' | 'account') => void;
     conversations: Conversation[];
     activeConversationId: number | null;
     onSelectConversation: (id: number) => void;
     searchResults: User[];
     onSearchUsers: (query: string) => void;
     onStartConversation: (userId: number) => void;
-    allUsers: User[];
     currentUser: User;
-    onUpdateProfile: (data: Partial<Pick<User, 'email' | 'full_name'>> & { password?: string }) => Promise<void>;
-    onLogout: () => void;
 }
 
 export function Sidebar({
+    isOpen,
+    onToggle,
+    activeSection,
+    onChangeSection,
     conversations,
     activeConversationId,
     onSelectConversation,
     searchResults,
     onSearchUsers,
     onStartConversation,
-    allUsers,
     currentUser,
-    onUpdateProfile,
-    onLogout,
 }: SidebarProps) {
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [name, setName] = React.useState(currentUser.full_name || '');
-    const [email, setEmail] = React.useState(currentUser.email);
-    const [password, setPassword] = React.useState('');
-    const [saving, setSaving] = React.useState(false);
-
-    React.useEffect(() => {
-        setName(currentUser.full_name || '');
-        setEmail(currentUser.email);
-    }, [currentUser]);
 
     const handleSearchChange = (value: string) => {
         setSearchTerm(value);
@@ -51,28 +44,42 @@ export function Sidebar({
         onSearchUsers('');
     };
 
-    const handleProfileSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSaving(true);
-        try {
-            await onUpdateProfile({
-                full_name: name,
-                email,
-                password: password || undefined,
-            });
-            setPassword('');
-        } finally {
-            setSaving(false);
-        }
-    };
-
     return (
-        <div className="w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
+        <div className={`${isOpen ? 'w-80' : 'w-0 md:w-20'} transition-all duration-300 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden`}>
             <div className="p-4 border-b border-gray-200 dark:border-gray-800 space-y-3">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Messages
-                </h2>
+                <div className="flex items-center justify-between">
+                    <button
+                        onClick={onToggle}
+                        className="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    >
+                        {isOpen ? 'Hide' : 'Menu'}
+                    </button>
+                    {isOpen && (
+                        <div className="flex -space-x-2">
+                            <Avatar name={currentUser.full_name || currentUser.email} size="sm" />
+                        </div>
+                    )}
+                </div>
 
+                {isOpen && (
+                    <div className="flex gap-2">
+                        {(['chat', 'directory', 'account'] as const).map((section) => (
+                            <button
+                                key={section}
+                                onClick={() => onChangeSection(section)}
+                                className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold capitalize transition-colors ${
+                                    activeSection === section
+                                        ? 'bg-blue-600 text-white'
+                                        : 'border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                }`}
+                            >
+                                {section}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {isOpen && (
                 <div className="relative">
                     <input
                         type="text"
@@ -82,8 +89,9 @@ export function Sidebar({
                         className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
+                )}
 
-                {searchResults.length > 0 && (
+                {isOpen && searchResults.length > 0 && (
                     <div className="space-y-2">
                         <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                             Start a chat
@@ -111,78 +119,7 @@ export function Sidebar({
                 )}
             </div>
 
-            <div className="border-b border-gray-200 dark:border-gray-800 p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                    <Avatar name={currentUser.full_name || currentUser.email} />
-                    <div>
-                        <div className="font-semibold text-gray-900 dark:text-white">{currentUser.full_name || 'Your profile'}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{currentUser.email}</div>
-                    </div>
-                </div>
-                <form onSubmit={handleProfileSubmit} className="space-y-2">
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Full name"
-                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email"
-                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="New password (optional)"
-                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="flex gap-2">
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="flex-1 rounded-xl bg-blue-600 text-white px-3 py-2 text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60"
-                        >
-                            {saving ? 'Saving...' : 'Save profile'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onLogout}
-                            className="rounded-xl border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                        >
-                            Logout
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div className="border-b border-gray-200 dark:border-gray-800 p-4 space-y-2">
-                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Directory</p>
-                <div className="max-h-52 overflow-y-auto space-y-1 pr-1">
-                    {allUsers.length === 0 ? (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">No other users yet.</div>
-                    ) : (
-                        allUsers.map((user) => (
-                            <button
-                                key={`dir-${user.id}`}
-                                onClick={() => handleStartChat(user.id)}
-                                className="w-full flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <Avatar name={user.full_name || user.email} size="sm" />
-                                <div className="text-left">
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">{user.full_name || 'Unknown user'}</div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">{user.email}</div>
-                                </div>
-                            </button>
-                        ))
-                    )}
-                </div>
-            </div>
-
+            {isOpen && (
             <div className="flex-1 overflow-y-auto">
                 {conversations.length === 0 ? (
                     <div className="p-4 text-center text-gray-500 dark:text-gray-400">
@@ -209,6 +146,7 @@ export function Sidebar({
                     ))
                 )}
             </div>
+            )}
         </div>
     );
 }

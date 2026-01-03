@@ -38,7 +38,7 @@ export function MessageList({ messages, currentUserId, users }: MessageListProps
                             <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[70%]`}>
                                 {!isOwn && (
                                     <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                        {sender?.full_name || 'Unknown'}
+                                        {sender?.full_name || sender?.email || 'Unknown'}
                                     </span>
                                 )}
 
