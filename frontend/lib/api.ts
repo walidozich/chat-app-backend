@@ -1,4 +1,4 @@
-import type { Conversation, LoginRequest, RegisterRequest, AuthResponse, User } from '@/types';
+import type { Conversation, LoginRequest, RegisterRequest, AuthResponse, UpdateProfileRequest, User } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 const API_V1 = `${API_BASE_URL}/api/v1`;
@@ -127,6 +127,35 @@ export class ApiClient {
 
         if (!response.ok) {
             throw new Error('Failed to fetch conversation');
+        }
+
+        return response.json();
+    }
+
+    async updateProfile(data: UpdateProfileRequest): Promise<User> {
+        const response = await fetch(`${API_V1}/users/me`, {
+            method: 'PUT',
+            headers: {
+                ...this.getAuthHeaders(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update profile');
+        }
+
+        return response.json();
+    }
+
+    async listUsers(): Promise<User[]> {
+        const response = await fetch(`${API_V1}/users/all`, {
+            headers: this.getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch users');
         }
 
         return response.json();

@@ -27,6 +27,7 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [users, setUsers] = useState<Map<number, User>>(new Map());
     const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
 
     useEffect(() => {
         conversationsRef.current = conversations;
@@ -69,6 +70,11 @@ export default function ChatPage() {
             .catch(() => {
                 router.push('/');
             });
+
+        // Fetch directory
+        apiClient.listUsers()
+            .then(setAllUsers)
+            .catch(err => console.error('Failed to load users:', err));
 
         // Connect WebSocket
         wsManager.connect(token);
@@ -205,6 +211,22 @@ export default function ChatPage() {
         }
     };
 
+    const handleUpdateProfile = async (data: { full_name?: string; email?: string; password?: string }) => {
+        try {
+            const updated = await apiClient.updateProfile(data);
+            setCurrentUser(updated);
+            setUsers(prev => new Map(prev).set(updated.id, updated));
+        } catch (err) {
+            console.error('Failed to update profile:', err);
+        }
+    };
+
+    const handleLogout = () => {
+        apiClient.clearToken();
+        wsManager.disconnect();
+        router.push('/');
+    };
+
     if (!currentUser) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -224,6 +246,10 @@ export default function ChatPage() {
                 searchResults={searchResults}
                 onSearchUsers={handleSearchUsers}
                 onStartConversation={handleStartConversation}
+                allUsers={allUsers}
+                currentUser={currentUser}
+                onUpdateProfile={handleUpdateProfile}
+                onLogout={handleLogout}
             />
             <ChatArea
                 messages={messages}

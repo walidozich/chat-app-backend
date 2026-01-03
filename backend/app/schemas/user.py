@@ -12,6 +12,12 @@ class UserCreate(UserBase):
     email: EmailStr
     password: str
 
+# Properties to receive for profile updates
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    password: Optional[str] = None
+
 # Properties to return via API
 class User(UserBase):
     id: int

@@ -36,6 +36,12 @@ export interface RegisterRequest {
     full_name: string;
 }
 
+export interface UpdateProfileRequest {
+    email?: string;
+    password?: string;
+    full_name?: string | null;
+}
+
 export interface AuthResponse {
     access_token: string;
     token_type: string;
