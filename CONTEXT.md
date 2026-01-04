@@ -38,6 +38,7 @@ The backend runs on **port 8001** (to avoid common conflicts with port 8000).
 - [x] Database Seeding script.
 - [x] Next.js Chat UI with Sidebar and Chat Area.
 - [x] API endpoints for fetching Conversations and Messages.
+- [x] User search and direct-conversation creation (both backend and frontend).
 
 ## 🛠 Troubleshooting & Gotchas
 - **Hydration Warning**: Fixed in `frontend/app/layout.tsx` using `suppressHydrationWarning` on the `<html>` tag.

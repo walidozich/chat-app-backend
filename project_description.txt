@@ -8,7 +8,7 @@ Key Features:
 - Authentication via JWT (JSON Web Tokens).
 - Multi-device support with synchronized message delivery.
 - Persistence of messages, conversations, and user data in a database.
-- Support for presence updates, typing indicators, and read receipts.
+- Support for presence updates and typing indicators (planned).
 - Scalable architecture designed for horizontal scaling (ready for Redis Pub/Sub integration).
 
 Architecture:

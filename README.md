@@ -72,6 +72,7 @@ npm run dev
 - Message Persistence in PostgreSQL
 - Modern Next.js UI
 - Conversation Management (Direct & Group)
+- User search and start-a-chat flow
 
 ## How to Use
 1. Ensure Docker is running.
