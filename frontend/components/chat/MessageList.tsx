@@ -8,9 +8,12 @@ interface MessageListProps {
     messages: Message[];
     currentUserId: number;
     users: Map<number, User>;
+    onLoadMore?: () => void;
+    hasMore?: boolean;
+    loadingMore?: boolean;
 }
 
-export function MessageList({ messages, currentUserId, users }: MessageListProps) {
+export function MessageList({ messages, currentUserId, users, onLoadMore, hasMore, loadingMore }: MessageListProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -19,6 +22,18 @@ export function MessageList({ messages, currentUserId, users }: MessageListProps
 
     return (
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {onLoadMore && hasMore && (
+                <div className="flex justify-center">
+                    <button
+                        onClick={onLoadMore}
+                        disabled={loadingMore}
+                        className="text-xs px-3 py-1 rounded-full border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                        {loadingMore ? 'Loading...' : 'Load earlier messages'}
+                    </button>
+                </div>
+            )}
+
             {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
                     No messages yet. Start the conversation!
@@ -51,12 +66,19 @@ export function MessageList({ messages, currentUserId, users }: MessageListProps
                                     {message.content}
                                 </div>
 
-                                <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                    {new Date(message.created_at).toLocaleTimeString([], {
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                    })}
-                                </span>
+                                <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                    <span>
+                                        {new Date(message.created_at).toLocaleTimeString([], {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    </span>
+                                    {isOwn && (
+                                        <span className={message.seen ? 'text-blue-600 dark:text-blue-400' : ''}>
+                                            {message.seen ? 'Seen' : 'Sent'}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     );

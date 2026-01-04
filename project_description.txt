@@ -8,6 +8,11 @@ Key Features:
 - Authentication via JWT (JSON Web Tokens).
 - Multi-device support with synchronized message delivery.
 - Persistence of messages, conversations, and user data in a database.
+- **Unread message count badges** per conversation in sidebar.
+- **Read receipts** with "Seen" status on messages.
+- **Last read tracking** per user per conversation.
+- **Toast notifications** for new messages in inactive conversations.
+- **Message pagination** with load-more functionality.
 - Support for presence updates and typing indicators (planned).
 - Scalable architecture designed for horizontal scaling (ready for Redis Pub/Sub integration).
 
@@ -69,9 +74,20 @@ Phase 5: Advanced Real-time Features
 10. Presence & Status
     - Track online/offline status.
     - Broadcast status updates to relevant users.
-11. Typing Indicators & Read Receipts
-    - Handle ephemeral events (`user.typing`, `message.read`) that don't need permanent persistence (or minimal persistence).
-    - Broadcast these events to conversation participants.
+11. Typing Indicators & Read Receipts ✅ PARTIALLY COMPLETED
+    - [x] Read receipts with `conversation.read` WebSocket event.
+    - [x] `last_read_at` tracking in `conversation_participants` table.
+    - [x] "Seen" status display on sender's messages.
+    - [ ] Typing indicators (`user.typing` event) - pending.
+12. Unread Message System ✅ COMPLETED
+    - [x] Server-side unread count calculation.
+    - [x] Badge display in sidebar per conversation.
+    - [x] Count reset when conversation is opened.
+    - [x] Real-time count updates via WebSocket.
+13. In-App Notifications ✅ COMPLETED
+    - [x] Toast component for new message alerts.
+    - [x] Sender name and message preview in toast.
+    - [x] Auto-dismiss after 4 seconds.
 
 Phase 6: Frontend Client
 ------------------------

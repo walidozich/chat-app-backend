@@ -7,6 +7,7 @@ export class WebSocketManager {
     private ws: WebSocket | null = null;
     private token: string | null = null;
     private messageHandlers: ((message: Message) => void)[] = [];
+    private readHandlers: ((payload: { conversation_id: number; user_id: number; last_read_at: string }) => void)[] = [];
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
 
@@ -25,6 +26,8 @@ export class WebSocketManager {
                 if (socketEvent.type === 'message.new') {
                     const message: Message = socketEvent.payload;
                     this.messageHandlers.forEach(handler => handler(message));
+                } else if (socketEvent.type === 'conversation.read') {
+                    this.readHandlers.forEach(handler => handler(socketEvent.payload));
                 }
             } catch (error) {
                 console.error('Failed to parse message:', error);
@@ -68,12 +71,17 @@ export class WebSocketManager {
         this.messageHandlers.push(handler);
     }
 
+    onRead(handler: (payload: { conversation_id: number; user_id: number; last_read_at: string }) => void) {
+        this.readHandlers.push(handler);
+    }
+
     disconnect() {
         if (this.ws) {
             this.ws.close();
             this.ws = null;
         }
         this.messageHandlers = [];
+        this.readHandlers = [];
     }
 }
 

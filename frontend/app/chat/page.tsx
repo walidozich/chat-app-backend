@@ -4,12 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/chat/Sidebar';
 import { ChatArea } from '@/components/chat/ChatArea';
+import { ToastContainer, type ToastMessage } from '@/components/ui/Toast';
 import { apiClient } from '@/lib/api';
 import { wsManager } from '@/lib/websocket';
 import type { User, Message, Conversation } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 const API_V1 = `${API_BASE_URL}/api/v1`;
+const PAGE_SIZE = 20;
 
 export default function ChatPage() {
     const router = useRouter();
@@ -19,17 +21,27 @@ export default function ChatPage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
     const activeConversationIdRef = React.useRef<number | null>(null);
+    const currentUserRef = React.useRef<User | null>(null);
     const conversationsRef = React.useRef<Conversation[]>([]);
+    const [messageCounts, setMessageCounts] = useState<Record<number, number>>({});
 
     // Keep ref in sync with state
     useEffect(() => {
         activeConversationIdRef.current = activeConversationId;
     }, [activeConversationId]);
 
+    useEffect(() => {
+        currentUserRef.current = currentUser;
+    }, [currentUser]);
+
     const [messages, setMessages] = useState<Message[]>([]);
     const [users, setUsers] = useState<Map<number, User>>(new Map());
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [toasts, setToasts] = useState<ToastMessage[]>([]);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [earliestMessageId, setEarliestMessageId] = useState<number | null>(null);
 
     useEffect(() => {
         conversationsRef.current = conversations;
@@ -40,20 +52,28 @@ export default function ChatPage() {
             const filtered = prev.filter(c => c.id !== conversation.id);
             return [conversation, ...filtered];
         });
+        if (conversation.message_count !== undefined) {
+            setMessageCounts(prev => ({
+                ...prev,
+                [conversation.id]: conversation.message_count ?? 0,
+            }));
+        }
     };
 
     const ensureConversationExists = async (conversationId: number) => {
         const existing = conversationsRef.current.find(c => c.id === conversationId);
         if (existing) {
             upsertConversation(existing);
-            return;
+            return existing;
         }
         try {
             const conv = await apiClient.getConversation(conversationId);
             upsertConversation(conv);
+            return conv;
         } catch (err) {
             console.error('Failed to fetch conversation for incoming message:', err);
         }
+        return undefined;
     };
 
     useEffect(() => {
@@ -90,8 +110,14 @@ export default function ChatPage() {
         wsManager.onMessage(async (message) => {
             // Ensure conversation exists locally so recipients see new chats immediately
             const conversationId = message.conversation_id;
-            await ensureConversationExists(conversationId);
-            await ensureUserKnown(message.sender_id);
+            const conv = await ensureConversationExists(conversationId);
+            const sender = await ensureUserKnown(message.sender_id);
+            const isActive = conversationId === activeConversationIdRef.current;
+            const isOwnMessage = currentUserRef.current && message.sender_id === currentUserRef.current.id;
+            setMessageCounts(prev => ({
+                ...prev,
+                [conversationId]: isActive || isOwnMessage ? 0 : (prev[conversationId] ?? conv?.message_count ?? 0) + 1,
+            }));
 
             // If user has no active conversation (e.g., first message), open the new chat
             if (!activeConversationIdRef.current) {
@@ -102,6 +128,14 @@ export default function ChatPage() {
 
             // Only add message if it's for the current active conversation
             if (conversationId !== activeConversationIdRef.current) {
+                if (!isOwnMessage) {
+                    const senderInState = sender || users.get(message.sender_id) || allUsers.find(u => u.id === message.sender_id);
+                    const senderName = senderInState?.full_name || senderInState?.email || 'New message';
+                    pushToast({
+                        title: senderName,
+                        description: message.content,
+                    });
+                }
                 return;
             }
 
@@ -110,8 +144,17 @@ export default function ChatPage() {
                 if (prev.some(m => m.id === message.id)) {
                     return prev;
                 }
-                return [...prev, message];
+                return [...prev, { ...message, seen: message.seen ?? false }];
             });
+        });
+        wsManager.onRead((payload) => {
+            applyReadReceipt(payload.conversation_id, payload.user_id, payload.last_read_at);
+            if (payload.user_id === currentUserRef.current?.id) {
+                setMessageCounts(prev => ({
+                    ...prev,
+                    [payload.conversation_id]: 0,
+                }));
+            }
         });
 
         // Fetch conversations from API
@@ -123,6 +166,13 @@ export default function ChatPage() {
             .then(res => res.json())
             .then(convs => {
                 setConversations(convs);
+                setMessageCounts(() => {
+                    const counts: Record<number, number> = {};
+                    convs.forEach((c: Conversation) => {
+                        counts[c.id] = c.message_count ?? 0;
+                    });
+                    return counts;
+                });
                 if (convs.length > 0) {
                     setActiveConversationId(convs[0].id);
                 }
@@ -136,49 +186,62 @@ export default function ChatPage() {
         };
     }, [router]);
 
-    // Fetch messages when active conversation changes
-    useEffect(() => {
-        if (!activeConversationId) {
-            setMessages([]);
-            return;
-        }
-
+    const loadMessages = async (conversationId: number, append = false, beforeId?: number) => {
         const token = apiClient.getToken();
         if (!token) return;
 
-        // Clear messages while loading new conversation
-        setMessages([]);
+        if (!append) {
+            setMessages([]);
+            setEarliestMessageId(null);
+        } else {
+            setLoadingMore(true);
+        }
 
-        // Fetch messages for the conversation
-        fetch(`${API_V1}/messages/${activeConversationId}/messages`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        })
-            .then(res => res.json())
-            .then(msgs => {
-                setMessages(msgs);
-                // Fetch user info for all senders
-                const senderIds = [...new Set(msgs.map((m: Message) => m.sender_id))] as number[];
-                senderIds.forEach(senderId => {
-                    setUsers(prev => {
-                        if (prev.has(senderId)) return prev;
-                        const next = new Map(prev);
-                        const fromDirectory = allUsers.find(u => u.id === senderId);
-                        if (fromDirectory) {
-                            next.set(senderId, fromDirectory);
-                        } else if (currentUser && senderId === currentUser.id) {
-                            next.set(senderId, currentUser);
-                        }
-                        return next;
-                    });
-                    ensureUserKnown(senderId);
-                });
-            })
-            .catch(err => {
-                console.error('Failed to fetch messages:', err);
+        const params = new URLSearchParams();
+        params.append('limit', PAGE_SIZE.toString());
+        if (beforeId) params.append('before_id', beforeId.toString());
+
+        try {
+            const res = await fetch(`${API_V1}/messages/${conversationId}/messages?${params.toString()}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
             });
-    }, [activeConversationId, currentUser]); // Removed 'users' from dependencies
+            const raw: Message[] = await res.json();
+            const msgs = raw.map(m => ({ ...m, seen: m.seen ?? false }));
+
+            if (append) {
+                setMessages(prev => [...msgs, ...prev]);
+            } else {
+                setMessages(msgs);
+            }
+
+            if (msgs.length > 0) {
+                setEarliestMessageId(msgs[0].id);
+            }
+            setHasMore(msgs.length === PAGE_SIZE);
+            setMessageCounts(prev => ({
+                ...prev,
+                [conversationId]: 0,
+            }));
+
+            const senderIds = [...new Set(msgs.map((m: Message) => m.sender_id))] as number[];
+            senderIds.forEach(senderId => ensureUserKnown(senderId));
+        } catch (err) {
+            console.error('Failed to fetch messages:', err);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!activeConversationId) {
+            setMessages([]);
+            setHasMore(false);
+            return;
+        }
+        loadMessages(activeConversationId);
+    }, [activeConversationId]);
 
     const handleSendMessage = (content: string) => {
         if (activeConversationId) {
@@ -186,13 +249,18 @@ export default function ChatPage() {
         }
     };
 
-    const ensureUserKnown = async (userId: number) => {
-        if (users.has(userId)) return;
+    const handleLoadMore = () => {
+        if (!activeConversationId || loadingMore || !hasMore) return;
+        loadMessages(activeConversationId, true, earliestMessageId || undefined);
+    };
+
+    const ensureUserKnown = async (userId: number): Promise<User | undefined> => {
+        if (users.has(userId)) return users.get(userId);
 
         const fromDirectory = allUsers.find(u => u.id === userId);
         if (fromDirectory) {
             setUsers(prev => new Map(prev).set(userId, fromDirectory));
-            return;
+            return fromDirectory;
         }
 
         try {
@@ -201,13 +269,44 @@ export default function ChatPage() {
             const found = refreshed.find(u => u.id === userId);
             if (found) {
                 setUsers(prev => new Map(prev).set(userId, found));
+                return found;
             }
         } catch (err) {
             console.error('Failed to load user info:', err);
         }
+        return undefined;
+    };
+
+    const applyReadReceipt = (conversationId: number, readerId: number, lastReadAt: string) => {
+        if (!currentUserRef.current) return;
+        if (readerId === currentUserRef.current.id) {
+            // Current user already set counts to 0 locally when viewing
+            return;
+        }
+        const readTime = new Date(lastReadAt).getTime();
+        setMessages(prev =>
+            prev.map(msg => {
+                if (msg.conversation_id !== conversationId) return msg;
+                if (msg.sender_id !== currentUserRef.current!.id) return msg;
+                const msgTime = new Date(msg.created_at).getTime();
+                if (msgTime <= readTime) {
+                    return { ...msg, seen: true };
+                }
+                return msg;
+            })
+        );
     };
 
     const showChat = activeSection === 'chat';
+
+    const pushToast = (toast: Omit<ToastMessage, 'id'>) => {
+        const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+        const newToast = { ...toast, id };
+        setToasts((prev) => [...prev, newToast]);
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 4000);
+    };
 
     const handleSearchUsers = async (query: string) => {
         const term = query.trim();
@@ -241,6 +340,10 @@ export default function ChatPage() {
             });
             setActiveConversationId(conversation.id);
             setSearchResults([]);
+            setMessageCounts(prev => ({
+                ...prev,
+                [conversation.id]: conversation.message_count ?? 0,
+            }));
         } catch (err) {
             console.error('Failed to start conversation:', err);
         }
@@ -251,6 +354,11 @@ export default function ChatPage() {
             const updated = await apiClient.updateProfile(data);
             setCurrentUser(updated);
             setUsers(prev => new Map(prev).set(updated.id, updated));
+            // Update direct conversations names if they relied on current user's old name/email
+            setConversations(prev => prev.map(conv => {
+                if (conv.is_group) return conv;
+                return { ...conv, participants: conv.participants };
+            }));
         } catch (err) {
             console.error('Failed to update profile:', err);
         }
@@ -272,6 +380,15 @@ export default function ChatPage() {
 
     const activeConversation = conversations.find(c => c.id === activeConversationId);
 
+    const getConversationTitle = (conv: Conversation) => {
+        if (conv.is_group) return conv.name || 'Group';
+        if (conv.participants && currentUser) {
+            const other = conv.participants.find(p => p.id !== currentUser.id);
+            if (other) return other.full_name || other.email || 'Direct chat';
+        }
+        return conv.name || 'Direct chat';
+    };
+
     return (
         <div className="h-screen flex">
             <Sidebar
@@ -285,6 +402,8 @@ export default function ChatPage() {
                     setActiveSection('chat');
                     setActiveConversationId(id);
                 }}
+                getConversationTitle={getConversationTitle}
+                messageCounts={messageCounts}
                 searchResults={searchResults}
                 onSearchUsers={handleSearchUsers}
                 onStartConversation={(userId) => {
@@ -314,7 +433,10 @@ export default function ChatPage() {
                         currentUserId={currentUser.id}
                         users={users}
                         onSendMessage={handleSendMessage}
-                        conversationName={activeConversation?.name || undefined}
+                        conversationName={activeConversation ? getConversationTitle(activeConversation) : undefined}
+                        onLoadMore={handleLoadMore}
+                        hasMore={hasMore}
+                        loadingMore={loadingMore}
                     />
                 )}
 
@@ -428,6 +550,7 @@ export default function ChatPage() {
                     </div>
                 )}
             </div>
+            <ToastContainer toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
         </div>
     );
 }
