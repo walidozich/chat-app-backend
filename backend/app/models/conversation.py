@@ -9,7 +9,8 @@ conversation_participants = Table(
     Base.metadata,
     Column('conversation_id', Integer, ForeignKey('conversation.id'), primary_key=True),
     Column('user_id', Integer, ForeignKey('user.id'), primary_key=True),
-    Column('joined_at', DateTime(timezone=True), server_default=func.now())
+    Column('joined_at', DateTime(timezone=True), server_default=func.now()),
+    Column('last_read_at', DateTime(timezone=True), nullable=True)
 )
 
 class Conversation(Base):

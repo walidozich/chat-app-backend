@@ -12,6 +12,8 @@ interface SidebarProps {
     conversations: Conversation[];
     activeConversationId: number | null;
     onSelectConversation: (id: number) => void;
+    getConversationTitle: (conv: Conversation) => string;
+    messageCounts: Record<number, number>;
     searchResults: User[];
     onSearchUsers: (query: string) => void;
     onStartConversation: (userId: number) => void;
@@ -26,6 +28,8 @@ export function Sidebar({
     conversations,
     activeConversationId,
     onSelectConversation,
+    getConversationTitle,
+    messageCounts,
     searchResults,
     onSearchUsers,
     onStartConversation,
@@ -133,15 +137,25 @@ export function Sidebar({
                             className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${activeConversationId === conv.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                                 }`}
                         >
-                            <Avatar name={conv.name || 'Chat'} />
-                            <div className="flex-1 text-left">
-                                <div className="font-medium text-gray-900 dark:text-white">
-                                    {conv.name || 'Unnamed Chat'}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                                    {conv.is_group ? 'Group' : 'Direct'}
-                                </div>
-                            </div>
+                            <Avatar name={getConversationTitle(conv)} />
+                            {(() => {
+                                const count = messageCounts[conv.id] ?? 0;
+                                return (
+                                    <div className="flex flex-col flex-1 text-left">
+                                        <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between">
+                                            <span className="truncate">{getConversationTitle(conv)}</span>
+                                            {count > 0 && (
+                                                <span className="min-w-[28px] text-center text-xs font-semibold bg-blue-600 text-white rounded-full px-2 py-1 ml-2">
+                                                    {count}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                            {conv.is_group ? 'Group' : 'Direct'}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </button>
                     ))
                 )}

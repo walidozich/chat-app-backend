@@ -16,6 +16,7 @@ class OutgoingMessage(BaseModel):
     content: str
     sender_id: int
     created_at: datetime
+    seen: bool = False
     
     class Config:
         from_attributes = True

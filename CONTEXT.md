@@ -30,6 +30,16 @@ The backend runs on **port 8001** (to avoid common conflicts with port 8000).
 - **Endpoint**: `ws://localhost:8001/api/v1/ws?token=...`
 - **Manager**: `ConnectionManager` in `backend/app/websockets/manager.py` handles active connections and broadcasting.
 - **Filtering**: The frontend filters incoming messages by `activeConversationId` to avoid display leaks.
+- **Events**:
+  - `message.new`: New message broadcast to conversation participants.
+  - `conversation.read`: Read receipt broadcast when a user views messages.
+
+### 5. Notification & Read Receipt System
+- **Unread Counts**: Calculated server-side by comparing `last_read_at` with message timestamps.
+- **Read Tracking**: When fetching messages, the backend updates `last_read_at` and notifies other participants via WebSocket.
+- **Background Tasks**: Read receipt notifications use FastAPI's `BackgroundTasks` to avoid blocking the response.
+- **Frontend State**: `messageCounts` state tracks unread counts per conversation, updated on message events and read receipts.
+- **Toast Component**: `frontend/components/ui/Toast.tsx` displays notifications for new messages.
 
 ## ✅ Current Status
 - [x] PostgreSQL Migration & Persistence.
@@ -39,6 +49,12 @@ The backend runs on **port 8001** (to avoid common conflicts with port 8000).
 - [x] Next.js Chat UI with Sidebar and Chat Area.
 - [x] API endpoints for fetching Conversations and Messages.
 - [x] User search and direct-conversation creation (both backend and frontend).
+- [x] **Unread Message Count System** with per-conversation badges.
+- [x] **Last Read Tracking** via `last_read_at` column in `conversation_participants`.
+- [x] **Read Receipts** broadcast over WebSocket (`conversation.read` event).
+- [x] **Message Seen Status** displayed to senders.
+- [x] **Toast Notifications** for incoming messages in non-active conversations.
+- [x] **Message Pagination** with "Load earlier messages" support.
 
 ## 🛠 Troubleshooting & Gotchas
 - **Hydration Warning**: Fixed in `frontend/app/layout.tsx` using `suppressHydrationWarning` on the `<html>` tag.
@@ -46,10 +62,13 @@ The backend runs on **port 8001** (to avoid common conflicts with port 8000).
 - **Duplicate Message Keys**: Fixed in `MessageList.tsx` by using `key={`msg-${message.id}`}` and checking for duplicates in the state.
 
 ## 🔮 Next Steps / Recommendations
-1. **User Search**: Build an endpoint and UI to find users and start new conversations.
+1. ~~**User Search**: Build an endpoint and UI to find users and start new conversations.~~ ✅ Completed
 2. **Online Status**: Add a "User Presence" system using the WebSocket connection state.
 3. **Typing Indicators**: Implementation of "User is typing..." events over WebSockets.
-4. **Message History Enrichment**: Add pagination or infinite scroll for message history.
+4. ~~**Message History Enrichment**: Add pagination or infinite scroll for message history.~~ ✅ Completed
 5. **Media Support**: Implement image/file uploads (using S3 or local storage).
+6. **Push Notifications**: Browser push notifications for messages when the app is in background.
+7. **Message Reactions**: Add emoji reactions to messages.
+8. **Message Editing/Deletion**: Allow users to edit or delete their messages.
 
 ---

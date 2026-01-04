@@ -73,6 +73,11 @@ npm run dev
 - Modern Next.js UI
 - Conversation Management (Direct & Group)
 - User search and start-a-chat flow
+- **Unread Message Counts**: Badge indicators showing unread messages per conversation
+- **Read Receipts**: "Seen" status on messages when the recipient views them
+- **Last Read Tracking**: Per-user tracking of last read timestamp for each conversation
+- **Toast Notifications**: In-app notifications for new messages in inactive conversations
+- **Message Pagination**: Load earlier messages with infinite scroll support
 
 ## How to Use
 1. Ensure Docker is running.

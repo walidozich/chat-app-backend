@@ -10,6 +10,8 @@ export interface Conversation {
     name: string | null;
     is_group: boolean;
     created_at: string;
+    message_count?: number;
+    participants?: User[];
 }
 
 export interface Message {
@@ -18,6 +20,7 @@ export interface Message {
     sender_id: number;
     content: string;
     created_at: string;
+    seen?: boolean;
 }
 
 export interface SocketEvent {
